@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fstream>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -9,10 +8,11 @@
 
 using namespace std;
 
-#define SEPARATOR           "::**::"
-#define TMP_FILE_NAME       "hghist.log"
-#define COMMAND_FMT         "hg history --template '{author}\n{rev}\n{desc}\n%s\n' %s > %s"
-#define DEFAULT_OUT_FORMAT  "<strong><span style=\"color: #5d7870;\">[<strong>%u</strong> %s]</span></strong> %s"
+#define SEPARATOR                   "::**::"
+#define TMP_FILE_NAME               "hghist.log"
+#define COMMAND_FMT                 "hg history --template '{author}\n{rev}\n{desc}\n%s\n' %s"
+#define DEFAULT_OUT_FORMAT          "<strong><span style=\"color: #5d7870;\">[<strong>%u</strong> %s]</span></strong> %s"
+#define DEFAULT_OUTPUT_FILE_NAME    "changelog"
 
 std::string GetFormattedString(const char * format, ...)
 {
@@ -135,26 +135,29 @@ int main()
             break;
     }
 
-    cout << "Creating temporary " << TMP_FILE_NAME << " file." << endl;
-    system(GetFormattedString(COMMAND_FMT, SEPARATOR, options.c_str(), TMP_FILE_NAME).c_str());
+    cout << "Creating hitory ..." << endl;
+
+    FILE * history = popen(GetFormattedString(COMMAND_FMT, SEPARATOR, options.c_str()).c_str(), "r");
+
+    if (!history)
+    {
+        cout << "Error while creating history !" << endl;
+        return -1;
+    }
 
     vector<RevInfo> revs;
     Part actualPart = PART_AUTHOR;
-    ifstream file;
-
-    cout << endl << "Opening " << TMP_FILE_NAME << " file." << endl;
-    file.open(TMP_FILE_NAME);
 
     RevInfo tmpInfo;
 
     int actual = 0;
 
-    cout << "Begin file processing ..." << endl;
-    while (!file.eof())
+    cout << "Begin history processing ..." << endl;
+    while (!feof(history))
     {
         char tmpStr[2000];
-        cout << "\rProcessing " << actual++ << " line.                 " << flush;
-        file.getline(tmpStr, 2000);
+        fscanf(history, "%[^\n]", tmpStr);  // get line
+        fgetc(history);                     // go to next line (get newline char)
 //        cout << "tmpStr: " << tmpStr << endl;
         switch (actualPart)
         {
@@ -183,24 +186,33 @@ int main()
                 actualPart = PART_AUTHOR;
                 break;
         }
+
+        cout << "\rProcessed " << actual++ << " lines.\t\t\t" << flush;
     }
 
-    file.close();
-
-    cout << "\rFile processing ended.                                     " << endl << endl;
+    pclose(history);
+    cout << endl << "History processing ended.\t\t\t" << endl << endl;
 
     std::string format, outFileName;
     cout << "Output format (choose 'x' for default format): ";
     cin >> format;
 
-    if (format.empty() || format == "" || format == "x")
+    if (format.empty() || format == " " || format == "x")
         format = DEFAULT_OUT_FORMAT;
 
-    cout << "Output file: ";
+    cout << "Output file (choose 'x' for default file name): ";
     cin >> outFileName;
 
-    ofstream oFile;
-    oFile.open(outFileName.c_str());
+    if (outFileName.empty() || outFileName == " " || outFileName == "x")
+        outFileName = DEFAULT_OUTPUT_FILE_NAME;
+
+    FILE * output = fopen(outFileName.c_str(), "w");
+
+    if (!output)
+    {
+        cout << "Error while opening file.";
+        return -2;
+    }
 
     int count = revs.size();
     actual = 1;
@@ -210,19 +222,19 @@ int main()
     cout << "Output file name: " << outFileName << endl;
     cout << "Rev count: " << count << endl << endl;
 
+    format += "\n";
+
     RevInfo tmpRevInfo;
     for (vector<RevInfo>::const_iterator itr = revs.begin(); itr != revs.end(); ++itr)
     {
         tmpRevInfo = *itr;
-        cout << "\rProcessing " << actual << " rev (from " << count << ")                         " << flush;
-        oFile << GetFormattedString(format.c_str(), tmpRevInfo.rev, tmpRevInfo.author.c_str(), tmpRevInfo.description.c_str()) << endl;
+        fprintf(output, format.c_str(), tmpRevInfo.rev, tmpRevInfo.author.c_str(), tmpRevInfo.description.c_str());
+        cout << "\rProcessed " << actual++ << " revs (from " << count << ")\t\t" << flush;
     }
 
-    cout << "\rChangelog output file creating ended.                                " << endl;
+    cout << endl << "Changelog output file creating ended. Closing file." << endl;
 
-    oFile.close();
-
-    system(GetFormattedString("rm %s", TMP_FILE_NAME).c_str());
+    fclose(output);
 
     return 0;
 }
