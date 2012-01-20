@@ -163,8 +163,8 @@ int main()
     while (!feof(history))
     {
         char tmpStr[2000];
-        fscanf(history, "%[^\n]", tmpStr);  // get line
-        fgetc(history);                     // go to next line (get newline char)
+        fgets(tmpStr, 2000, history);   // get line
+        tmpStr[strlen(tmpStr)-1] = 0;   // and remove new line character
 //        cout << "tmpStr: " << tmpStr << endl;
         switch (actualPart)
         {
