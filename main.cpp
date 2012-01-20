@@ -163,9 +163,9 @@ int main()
     while (!feof(history))
     {
         char tmpStr[2000];
-        fgets(tmpStr, 2000, history);   // get line
-        tmpStr[strlen(tmpStr)-1] = 0;   // and remove new line character
-//        cout << "tmpStr: " << tmpStr << endl;
+        if (fgets(tmpStr, 2000, history) != NULL)   // get line
+            tmpStr[strlen(tmpStr)-1] = 0;           // and remove new line character
+//        cout << endl << "tmpStr: " << tmpStr << endl;
         switch (actualPart)
         {
             case PART_AUTHOR:
