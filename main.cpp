@@ -6,17 +6,20 @@
 #include <vector>
 #include <stdarg.h>
 
+#define SEPARATOR                   "::**::"
+#define DEFAULT_OUT_FORMAT          "<strong><span style=\"color: #5d7870;\">[<strong>%u</strong> %s]</span></strong> %s"
+#define DEFAULT_OUTPUT_FILE_NAME    "changelog"
+
 #ifdef WIN32
 #define popen _popen
 #define pclose _pclose
+#define COMMAND_FMT                 "hg history --template '{author}\\n{rev}\\n{desc}\\n%s\\n' %s"
+#else
+#define COMMAND_FMT                 "hg history --template '{author}\n{rev}\n{desc}\n%s\n' %s"
 #endif
 
 using namespace std;
 
-#define SEPARATOR                   "::**::"
-#define COMMAND_FMT                 "hg history --template '{author}\n{rev}\n{desc}\n%s\n' %s"
-#define DEFAULT_OUT_FORMAT          "<strong><span style=\"color: #5d7870;\">[<strong>%u</strong> %s]</span></strong> %s"
-#define DEFAULT_OUTPUT_FILE_NAME    "changelog"
 
 std::string GetFormattedString(const char * format, ...)
 {
