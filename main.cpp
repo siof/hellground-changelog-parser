@@ -6,24 +6,31 @@
 #include <vector>
 #include <stdarg.h>
 
+#ifdef WIN32
+#define popen _popen
+#define pclose _pclose
+#endif
+
 using namespace std;
 
 #define SEPARATOR                   "::**::"
-#define TMP_FILE_NAME               "hghist.log"
 #define COMMAND_FMT                 "hg history --template '{author}\n{rev}\n{desc}\n%s\n' %s"
 #define DEFAULT_OUT_FORMAT          "<strong><span style=\"color: #5d7870;\">[<strong>%u</strong> %s]</span></strong> %s"
 #define DEFAULT_OUTPUT_FILE_NAME    "changelog"
 
 std::string GetFormattedString(const char * format, ...)
 {
-    char buffer[strlen(format) + 10000];
+    char * buffer = new char[strlen(format) + 10000];
 
     va_list args;
     va_start(args, format);
     vsprintf(buffer, format, args);
     va_end(args);
 
-    return std::string(buffer);
+    std::string tmpBuff = buffer;
+
+    delete [] buffer;
+    return tmpBuff;
 }
 
 enum Mode
